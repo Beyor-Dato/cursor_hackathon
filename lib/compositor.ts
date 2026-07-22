@@ -351,7 +351,7 @@ export async function exportVertical(
     ]);
     tracks.push(...stream.getTracks());
 
-    const rec = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 6_000_000 });
+    const rec = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 3_500_000 });
     recorder = rec;
     const chunks: Blob[] = [];
     rec.ondataavailable = (e: BlobEvent) => {
