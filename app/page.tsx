@@ -473,7 +473,7 @@ export default function Home() {
 
             <p className="reveal reveal-1 flex items-center gap-3 font-mono text-xs uppercase tracking-[0.35em] text-blood-hot">
               <span aria-hidden className="h-px w-10 bg-blood" />
-              Official clipping campaign tool
+Any video · in your browser
             </p>
             <h1 className="reveal reveal-2 relative mt-4 font-display text-6xl uppercase leading-[0.9] sm:text-8xl">
               Find the moment.
@@ -490,37 +490,37 @@ export default function Home() {
               ready to post.
             </p>
 
-            {ytAvailable && (
-              <>
-                <div className="reveal reveal-4 mt-10 flex gap-2">
-                  <input
-                    value={ytUrl}
-                    onChange={(e) => setYtUrl(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") void runFromUrl();
-                    }}
-                    disabled={processing}
-                    placeholder="Paste a YouTube link — podcast, presser, interview, VOD…"
-                    className="min-w-0 flex-1 border border-line bg-coal px-4 py-3 font-mono text-sm text-bone outline-none transition-colors placeholder:text-ash/60 focus:border-blood/70 disabled:opacity-50"
-                  />
-                  <button
-                    onClick={() => void runFromUrl()}
-                    disabled={processing}
-                    className="shrink-0 bg-blood px-5 py-3 text-sm font-bold uppercase tracking-wider text-white transition-colors [clip-path:polygon(10px_0,100%_0,calc(100%_-_10px)_100%,0_100%)] hover:bg-blood-hot disabled:opacity-50"
-                  >
-                    Pull &amp; Clip
-                  </button>
-                </div>
+            <div className="reveal reveal-4 mt-10 flex gap-2">
+              <input
+                value={ytUrl}
+                onChange={(e) => setYtUrl(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") void runFromUrl();
+                }}
+                disabled={processing || !ytAvailable}
+                placeholder={
+                  ytAvailable
+                    ? "Paste a YouTube link — podcast, presser, interview, VOD…"
+                    : "Link pull is offline here — drop a file below"
+                }
+                aria-label="YouTube link"
+                className="min-w-0 flex-1 border border-line bg-coal px-4 py-3 font-mono text-sm text-bone outline-none transition-colors placeholder:text-ash/60 focus:border-blood/70 disabled:cursor-not-allowed disabled:opacity-50"
+              />
+              <button
+                onClick={() => void runFromUrl()}
+                disabled={processing || !ytAvailable}
+                className="shrink-0 bg-blood px-5 py-3 text-sm font-bold uppercase tracking-wider text-white transition-colors [clip-path:polygon(10px_0,100%_0,calc(100%_-_10px)_100%,0_100%)] hover:bg-blood-hot disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Pull &amp; Clip
+              </button>
+            </div>
 
-                <div
-                  aria-hidden
-                  className="reveal reveal-4 mt-8 flex items-center gap-4 font-mono text-[11px] uppercase tracking-[0.2em] text-ash"
-                >
-                  <span className="h-px flex-1 bg-line" />
-                  or drop a file
-                  <span className="h-px flex-1 bg-line" />
-                </div>
-              </>
+            {!ytAvailable && (
+              <p className="reveal reveal-4 mt-2 font-mono text-[11px] leading-relaxed text-gold/80">
+                Link pull needs yt-dlp on the server — YouTube blocks cloud IPs,
+                so it only runs locally. Drop a file to use the full pipeline
+                here.
+              </p>
             )}
 
             <div className="reveal reveal-4 mt-3">
@@ -528,10 +528,19 @@ export default function Home() {
                 value={audience}
                 onChange={(e) => setAudience(e.target.value)}
                 disabled={processing}
-                placeholder="Target audience (optional) — e.g. “MMA fans”, “indie founders”. Blank = read it from the video"
+                placeholder="Target audience (optional) — e.g. “founders”, “true-crime fans”. Blank = read it from the video"
                 aria-label="Target audience, optional"
                 className="w-full border border-line bg-coal/60 px-4 py-2.5 font-mono text-xs text-bone outline-none transition-colors placeholder:text-ash/50 focus:border-gold/60 disabled:opacity-50"
               />
+            </div>
+
+            <div
+              aria-hidden
+              className="reveal reveal-5 mt-8 flex items-center gap-4 font-mono text-[11px] uppercase tracking-[0.2em] text-ash"
+            >
+              <span className="h-px flex-1 bg-line" />
+              or drop a file
+              <span className="h-px flex-1 bg-line" />
             </div>
 
             <div

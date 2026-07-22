@@ -31,6 +31,67 @@ flowchart TB
   mo -->|"clips JSON"| cards --> exp
 ```
 
+## Architecture
+
+```mermaid
+flowchart LR
+  subgraph CL["Client — Next.js App Router"]
+    direction TB
+    pg["page.tsx<br/>ingest + stage machine"]
+    cc["ClipCard.tsx<br/>preview + exports"]
+    st["clipStore.ts<br/>localStorage"]
+  end
+
+  subgraph WASM["WebAssembly + Canvas — in-tab"]
+    direction TB
+    fm["ffmpeg.ts<br/>audio extract, keyframe cuts, concat"]
+    cp["compositor.ts<br/>1080x1920 canvas + MediaRecorder"]
+  end
+
+  subgraph PURE["Deterministic core — no LLM"]
+    direction TB
+    tx["transcript.ts<br/>merge offsets, snap sentences"]
+    sr["srt.ts<br/>virtual-timeline cues"]
+    cap["caption.ts<br/>hashtag enforcement"]
+  end
+
+  subgraph API["Route handlers — thin"]
+    direction TB
+    rl["rateLimit.ts<br/>per-IP sliding window"]
+    ry["/api/youtube"]
+    rt["/api/transcribe"]
+    rm["/api/moments"]
+  end
+
+  subgraph EXT["External"]
+    direction TB
+    ytd["yt-dlp binary<br/>local only"]
+    wh["OpenAI whisper-1"]
+    gpt["OpenAI gpt-5"]
+  end
+
+  pg --> fm
+  pg --> tx --> sr
+  pg --> st
+  pg --> cc
+  cc --> fm
+  cc --> cp
+  cc --> sr
+  cc --> cap
+
+  pg -.->|"link"| ry
+  pg -.->|"audio chunks"| rt
+  pg -.->|"text timeline"| rm
+  rl --- ry
+  rl --- rt
+  rl --- rm
+  ry --> ytd
+  rt --> wh
+  rm --> gpt
+```
+
+Dotted edges are the only network hops, and none of them carries the source video: a link goes out, audio chunks and text go out, JSON comes back. Everything that touches the video pixels — extraction, cutting, concatenation, caption burning — lives in the WASM and canvas layer inside the tab.
+
 The split is strict: the LLM only classifies moments and writes copy. All deterministic math — chunk offsets, timestamp merging, sentence snapping, .srt timing — lives in code. The model proposes rough clip bounds; the client snaps them. Model output arrives in JSON mode and every field is validated and coerced server-side (clamped scores, in-bounds timestamps, cautious defaults for missing compliance data).
 
 ## Quickstart
