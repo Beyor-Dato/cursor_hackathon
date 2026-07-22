@@ -46,10 +46,6 @@ h1 em{font-style:normal;color:var(--blood)}
   font-family:"IBM Plex Mono",monospace;font-size:9.5px;font-weight:600;
   text-transform:uppercase;letter-spacing:.24em;color:var(--ash2);
   border-top:1px solid var(--line);padding-top:9px}
-.ghost{position:absolute;font-family:"Anton",sans-serif;font-size:300px;line-height:.75;
-  color:transparent;-webkit-text-stroke:2px rgba(17,17,24,.055);right:-14px;bottom:-56px;
-  user-select:none;pointer-events:none}
-
 /* ── atoms ─────────────────────────────────────────────── */
 /* denser rhythm for the three information-heaviest slides */
 .slide.tight .body{padding-top:18px}
@@ -153,7 +149,9 @@ code,.code{font-family:"IBM Plex Mono",monospace}
 .nope b{color:var(--blood-ink)}
 
 /* ── slide 4 pipeline ──────────────────────────────────── */
-.lane{border:1px solid var(--line);position:relative}
+.lane{border:1px solid var(--line);position:relative;flex:1;min-height:0}
+.lane .stages{height:100%}
+.st{display:flex;flex-direction:column}
 .lane .tag{position:absolute;top:-1px;left:-1px;font-family:"IBM Plex Mono",monospace;
   font-size:9.5px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;
   padding:5px 10px;color:#fff}
@@ -165,8 +163,8 @@ code,.code{font-family:"IBM Plex Mono",monospace}
 .st h4{font-family:"Anton",sans-serif;font-size:16px;text-transform:uppercase;
   line-height:1.05;margin-top:5px}
 .st p{font-size:12.5px;line-height:1.42;color:var(--ash);margin-top:6px}
-.st .who{margin-top:9px;font-family:"IBM Plex Mono",monospace;font-size:9px;font-weight:600;
-  letter-spacing:.16em;text-transform:uppercase;padding:3px 6px;display:inline-block}
+.st .who{margin-top:auto;align-self:flex-start;font-family:"IBM Plex Mono",monospace;
+  font-size:9px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;padding:3px 6px}
 .who.b{background:var(--ink);color:#fff}
 .who.s{background:var(--blood);color:#fff}
 .hops{display:grid;grid-template-columns:repeat(6,1fr);margin-top:12px}
@@ -189,7 +187,7 @@ code,.code{font-family:"IBM Plex Mono",monospace}
 .stat .k{font-family:"IBM Plex Mono",monospace;font-size:9.5px;font-weight:600;
   letter-spacing:.16em;text-transform:uppercase;color:var(--ash);margin-top:7px}
 
-.kicker{margin-top:auto;background:var(--panel2);border-left:5px solid var(--blood);
+.kicker{margin-top:auto;margin-bottom:5px;background:var(--panel2);border-left:5px solid var(--blood);
   padding:15px 20px;font-family:"Anton",sans-serif;font-size:22px;line-height:1.14;
   text-transform:uppercase}
 .kicker.dark{background:var(--ink);color:#fff;border-left-color:var(--gold)}
@@ -238,12 +236,12 @@ code,.code{font-family:"IBM Plex Mono",monospace}
 .steps h4{font-family:"Anton",sans-serif;font-size:16px;text-transform:uppercase;
   margin-top:9px;line-height:1.06}
 .steps p{font-size:12.5px;line-height:1.45;color:var(--ash);margin-top:6px}
-.final{margin:auto 0 6px;text-align:center}
+.final{margin:auto 0 16px;text-align:center}
 .steps{flex:none}
 .final .big{font-family:"Anton",sans-serif;font-size:60px;line-height:.95;text-transform:uppercase}
 .final .big u{text-decoration:none;color:var(--blood)}
 .final .s{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.26em;
-  text-transform:uppercase;color:var(--ash);margin-top:14px}
+  text-transform:uppercase;color:var(--ash);margin-top:24px}
 </style>
 </head>
 <body>
@@ -313,12 +311,11 @@ code,.code{font-family:"IBM Plex Mono",monospace}
     </div>
     <div class="costband">
       <div class="q">By the time the clip is posted,<br>the moment has <u>already moved on.</u></div>
-      <div class="z">The window on fight-week content is hours,<br>not days. Whatever the workflow
-        costs in latency,<br>it costs in reach.</div>
+      <div class="z">The window on fight-week content is hours, not days.
+        Whatever the workflow costs in latency, it costs in reach.</div>
     </div>
   </div>
   <div class="foot"><span>HookShot — how it works</span><span>02 / 10</span></div>
-  <div class="ghost">02</div>
 </section>
 
 <!-- ══ 03 THE BET ══ -->
@@ -545,7 +542,7 @@ code,.code{font-family:"IBM Plex Mono",monospace}
   <div class="rule"></div>
   <div class="body">
     <div class="anat">
-      <div class="clipcard">
+      <div><div class="clipcard">
         <div class="cc-vid">
           <span class="t">0:12 – 0:34 · 22s</span>
           <div class="kar">HE SAID IT <i>TO HIS FACE</i></div>
@@ -563,8 +560,10 @@ code,.code{font-family:"IBM Plex Mono",monospace}
           <p class="cap-txt">Paddy never blinked. Ilia had no answer.
             <b>#UFCClips</b> #UFC329 #Pimblett</p>
         </div>
-        <div class="cc-b"><div class="warn">⚠ Walkout risk — broadcast footage</div></div>
+        <div class="cc-b"><div class="warn">Walkout risk — broadcast footage</div></div>
       </div>
+      <p class="t" style="font-size:13px;margin-top:14px">One card per clip. The preview plays
+        in place with live captions — nothing is rendered until you actually export.</p></div>
       <div>
         <div class="callout"><div class="dot">1</div><div>
           <h5>Ranked by a four-part score</h5>
