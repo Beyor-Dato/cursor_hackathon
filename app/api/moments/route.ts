@@ -276,6 +276,8 @@ export async function POST(req: NextRequest) {
   let lastErr: unknown = null;
   for (const model of MODEL_CHAIN) {
     try {
+      // Default reasoning effort costs ~75s on a short transcript — far too
+      // slow for a live run, and close to the platform's function ceiling.
       const res = await openai.chat.completions.create({
         model,
         messages: [
@@ -283,6 +285,7 @@ export async function POST(req: NextRequest) {
           { role: "user", content: userMsg },
         ],
         response_format: { type: "json_object" },
+        reasoning_effort: "minimal",
       });
 
       const raw = res.choices[0]?.message?.content;
