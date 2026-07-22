@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
-import type { Clip } from "@/lib/types";
+import { timelineText } from "@/lib/transcript";
+import type { Clip, MergedTranscript } from "@/lib/types";
 
 export const maxDuration = 300;
 
 const STORYLINE_KEYS = [
   "mcgregor", "holloway", "saint_denis", "pimblett", "royval",
   "kavanagh", "green_mckinney", "whittaker", "steveson", "general",
-];
+] as const;
 
 const SYSTEM_PROMPT = `You are the clip strategist for the official UFC 329 (McGregor vs Holloway 2) clipping campaign. You receive a timestamped transcript of official promo content (Countdown, Embedded, media day, press conferences, weigh-ins, octagon interviews) and pick the moments most likely to go viral as short-form clips for TikTok/Shorts/Reels.
 
@@ -27,7 +28,7 @@ CAMPAIGN STORYLINES (tag every clip with the one it serves best):
 
 WHAT GOES VIRAL IN FIGHT PROMO (rank by this):
 - Trash talk peaks, quotable one-liners, mic moments >> b-roll or process talk
-- 20–60 seconds, self-contained arc: hook line → escalation → payoff
+- 20–45 seconds, self-contained arc: hook line → escalation → payoff
 - Open on the single hottest line (that becomes first_3s_hook)
 - Rivalry heat, genuine emotion, callbacks to history (Conor/Max 2013), weight-cut drama
 - Loopable or quotable endings
@@ -40,7 +41,7 @@ HARD CAMPAIGN RULES:
 
 TIMING RULES:
 - start_s/end_s must correspond to real timeline entries you were given (seconds). Never invent times beyond the video duration.
-- Cut on sentence boundaries; the clip must open ON the hook line, not before it.
+- Propose rough bounds only — the client snaps to sentence boundaries in code. Do NOT fine-tune sub-second timings.
 
 Return 5-8 clips ranked best-first by virality.total (0-100, be discriminating — a 90 is a banger, a 60 is filler).`;
 
@@ -64,7 +65,7 @@ const CLIPS_SCHEMA = {
           properties: {
             start_s: { type: "number" },
             end_s: { type: "number" },
-            storyline: { type: "string", enum: STORYLINE_KEYS },
+            storyline: { type: "string", enum: [...STORYLINE_KEYS] },
             hook_title: { type: "string" },
             first_3s_hook: { type: "string" },
             caption: { type: "string" },
@@ -99,7 +100,12 @@ const CLIPS_SCHEMA = {
   },
 } as const;
 
-const MODEL_CHAIN = ["gpt-5", "gpt-5-mini", "gpt-4o"];
+const MODEL_CHAIN = ["gpt-5", "gpt-5-mini"] as const;
+
+function enforceUfcClips(caption: string): string {
+  const trimmed = caption.trim();
+  return /#UFCClips\s*$/i.test(trimmed) ? trimmed : `${trimmed} #UFCClips`;
+}
 
 export async function POST(req: NextRequest) {
   if (!process.env.OPENAI_API_KEY) {
@@ -108,19 +114,27 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
+
   const openai = new OpenAI();
-  const { timeline, duration, videoName } = (await req.json()) as {
-    timeline: string;
-    duration: number;
+  const body = (await req.json()) as {
+    transcript?: MergedTranscript;
+    timeline?: string;
+    duration?: number;
     videoName?: string;
   };
-  if (!timeline?.trim()) {
+
+  const duration = body.duration ?? body.transcript?.duration ?? 0;
+  const timeline =
+    body.timeline?.trim() ||
+    (body.transcript?.segments ? timelineText(body.transcript.segments) : "");
+
+  if (!timeline) {
     return NextResponse.json({ error: "Empty transcript" }, { status: 400 });
   }
 
-  const userMsg = `SOURCE: ${videoName ?? "campaign video"} (duration ${Math.round(
+  const userMsg = `SOURCE: ${body.videoName ?? "campaign video"} (duration ${Math.round(
     duration
-  )}s)\n\nTIMESTAMPED TRANSCRIPT (format [m:ss-m:ss] text — convert to seconds for start_s/end_s):\n${timeline}`;
+  )}s)\n\nTIMESTAMPED TRANSCRIPT (format [m:ss-m:ss] text — use seconds for start_s/end_s):\n${timeline}`;
 
   let lastErr: unknown = null;
   for (const model of MODEL_CHAIN) {
@@ -133,8 +147,10 @@ export async function POST(req: NextRequest) {
         ],
         response_format: { type: "json_schema", json_schema: CLIPS_SCHEMA },
       });
+
       const raw = res.choices[0]?.message?.content;
       if (!raw) throw new Error("Empty completion");
+
       const parsed = JSON.parse(raw) as { clips: Clip[] };
 
       const clips = parsed.clips
@@ -142,10 +158,7 @@ export async function POST(req: NextRequest) {
         .map((c) => ({
           ...c,
           end_s: Math.min(c.end_s, duration),
-          // Campaign rule enforced in code, not just the prompt:
-          caption: /#UFCClips\s*$/i.test(c.caption.trim())
-            ? c.caption.trim()
-            : `${c.caption.trim()} #UFCClips`,
+          caption: enforceUfcClips(c.caption),
         }))
         .sort((a, b) => b.virality.total - a.virality.total);
 
@@ -153,10 +166,10 @@ export async function POST(req: NextRequest) {
     } catch (err) {
       lastErr = err;
       const msg = err instanceof Error ? err.message : String(err);
-      // Only fall through the chain on model-availability errors.
       if (!/model|not.?found|does not exist|unsupported/i.test(msg)) break;
     }
   }
+
   const msg = lastErr instanceof Error ? lastErr.message : "Unknown error";
   return NextResponse.json({ error: `Moment analysis failed: ${msg}` }, { status: 502 });
 }
