@@ -138,7 +138,6 @@ export default function ClipCard({
   words,
 }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const bgVideoRef = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
   const [started, setStarted] = useState(false);
   const [muted, setMuted] = useState(false);
@@ -245,12 +244,6 @@ export default function ClipCard({
       if (v) {
         enforceSegments(v);
         setT(v.currentTime);
-        // Nudge the blurred backdrop back into step when it drifts; it is
-        // heavily blurred, so only gross desync is visible.
-        const bg = bgVideoRef.current;
-        if (bg && Math.abs(bg.currentTime - v.currentTime) > 0.3) {
-          bg.currentTime = v.currentTime;
-        }
       }
       raf = requestAnimationFrame(tick);
     };
@@ -276,18 +269,9 @@ export default function ClipCard({
 
   function togglePlay() {
     const v = videoRef.current;
-    const bg = bgVideoRef.current;
     if (!v) return;
-    if (v.paused) {
-      void v.play().catch(() => undefined);
-      if (bg) {
-        bg.currentTime = v.currentTime;
-        void bg.play().catch(() => undefined);
-      }
-    } else {
-      v.pause();
-      bg?.pause();
-    }
+    if (v.paused) void v.play().catch(() => undefined);
+    else v.pause();
   }
 
   /** Seek to a virtual-timeline offset, mapped into the right segment. */
@@ -508,25 +492,14 @@ export default function ClipCard({
         tabIndex={0}
         aria-label={playing ? "Pause preview" : "Play preview"}
       >
-        {/* Mirrors the export exactly: blurred cover fill behind the whole
-            frame contained on top. Preview and MP4 must look identical. */}
-        <video
-          ref={bgVideoRef}
-          src={videoUrl}
-          playsInline
-          muted
-          preload="metadata"
-          aria-hidden
-          className="pointer-events-none absolute inset-0 h-full w-full scale-110 object-cover blur-xl brightness-[0.62]"
-        />
+        {/* Centre-crop, matching the compositor's close-up framing. */}
         <video
           ref={videoRef}
           src={videoUrl}
           playsInline
           muted={muted}
           preload="metadata"
-          className="absolute inset-0 h-full w-full object-contain"
-          style={{ transform: "translateY(-8%)" }}
+          className="absolute inset-0 h-full w-full object-cover"
           onTimeUpdate={handleTimeUpdate}
           onPlay={handlePlay}
           onPause={() => setPlaying(false)}

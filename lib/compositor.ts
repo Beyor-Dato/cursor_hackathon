@@ -80,23 +80,6 @@ function coverRect(vw: number, vh: number): { x: number; y: number; w: number; h
   return { x: 0, y: (vh - h) / 2, w: vw, h };
 }
 
-/**
- * Destination rect that CONTAINS the full source frame — never crops.
- * Landscape fits to width; portrait/square fits to height, capped at W.
- * Vertically centered on 42% of canvas height so the caption zone stays clear.
- */
-function containRect(vw: number, vh: number): { x: number; y: number; w: number; h: number } {
-  const scale = Math.min(W / vw, H / vh);
-  const w = vw * scale;
-  const h = vh * scale;
-  return {
-    x: (W - w) / 2,
-    y: Math.max(0, H * 0.42 - h / 2),
-    w,
-    h,
-  };
-}
-
 function buildGroups(words: Word[]): CaptionGroup[] {
   const clean = words.filter((w) => w.w.trim().length > 0);
   const groups: CaptionGroup[] = [];
@@ -334,7 +317,6 @@ export async function exportVertical(
     // Layout is fixed for the whole export: blurred cover-crop fills the
     // canvas behind a contained (never cropped) foreground frame.
     const bg = coverRect(video.videoWidth, video.videoHeight);
-    const fg = containRect(video.videoWidth, video.videoHeight);
     const groups = buildGroups(words);
     const layouts = new Map<number, CaptionLayout>();
     const title = layoutTitle(ctx, clip.hook_title);
@@ -375,16 +357,8 @@ export async function exportVertical(
       const t = video.currentTime;
       const virtual = virtualNow();
 
-      // Blurred cover-crop fills edge-to-edge (no black bars), darkened so
-      // the contained foreground frame reads on top.
-      ctx.filter = "blur(48px)";
+      // Close-up: centre-crop to fill the 9:16 frame edge to edge.
       ctx.drawImage(video, bg.x, bg.y, bg.w, bg.h, 0, 0, W, H);
-      ctx.filter = "none";
-      ctx.fillStyle = "rgba(0,0,0,0.38)";
-      ctx.fillRect(0, 0, W, H);
-
-      // Full frame, rescaled — never cropped.
-      ctx.drawImage(video, fg.x, fg.y, fg.w, fg.h);
 
       if (groups.length > 0) {
         while (groupIdx + 1 < groups.length && t >= groups[groupIdx + 1].start) groupIdx++;

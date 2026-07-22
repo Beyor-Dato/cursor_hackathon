@@ -1,0 +1,719 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>HookShot — How It Works</title>
+<link rel="stylesheet" href="fonts.css">
+<style>
+:root{
+  --paper:#ffffff; --panel:#f6f4f0; --panel2:#efece6;
+  --ink:#111118; --ash:#6d6d7a; --ash2:#8e8e9a;
+  --line:#dcd9d2; --line2:#c9c5bc;
+  --blood:#e01b2c; --blood-ink:#b8121f;
+  --gold:#f5b52e; --gold-ink:#8a5c02;
+  --coal:#15151c;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{background:#7a7a80;font-family:"Barlow",system-ui,sans-serif;color:var(--ink)}
+
+@page{size:1280px 720px;margin:0}
+
+.slide{
+  width:1280px;height:720px;background:var(--paper);
+  padding:52px 68px 46px;position:relative;overflow:hidden;
+  display:flex;flex-direction:column;
+  break-after:page;page-break-after:always;
+  margin:0 auto 24px;
+}
+.slide:last-child{break-after:auto;page-break-after:auto;margin-bottom:0}
+@media print{ .slide{margin:0} body{background:#fff} }
+
+/* ── frame ─────────────────────────────────────────────── */
+.slide::before{content:"";position:absolute;top:0;left:0;right:0;height:7px;background:var(--blood)}
+.eyebrow{display:flex;justify-content:space-between;align-items:baseline;
+  font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:600;
+  text-transform:uppercase;letter-spacing:.28em;color:var(--blood-ink)}
+.eyebrow .rt{color:var(--ash2)}
+h1{font-family:"Anton",sans-serif;font-weight:400;text-transform:uppercase;
+  font-size:53px;line-height:.94;letter-spacing:.004em;margin-top:14px}
+h1 em{font-style:normal;color:var(--blood)}
+.sub{font-size:17.5px;line-height:1.45;color:var(--ash);max-width:900px;margin-top:11px}
+.rule{height:2px;background:var(--ink);margin-top:18px}
+.body{flex:1;padding-top:24px;min-height:0;display:flex;flex-direction:column}
+.foot{position:absolute;left:68px;right:68px;bottom:20px;display:flex;
+  justify-content:space-between;align-items:center;
+  font-family:"IBM Plex Mono",monospace;font-size:9.5px;font-weight:600;
+  text-transform:uppercase;letter-spacing:.24em;color:var(--ash2);
+  border-top:1px solid var(--line);padding-top:9px}
+.ghost{position:absolute;font-family:"Anton",sans-serif;font-size:300px;line-height:.75;
+  color:transparent;-webkit-text-stroke:2px rgba(17,17,24,.055);right:-14px;bottom:-56px;
+  user-select:none;pointer-events:none}
+
+/* ── atoms ─────────────────────────────────────────────── */
+/* denser rhythm for the three information-heaviest slides */
+.slide.tight .body{padding-top:18px}
+.slide.tight .tick{margin-top:9px;font-size:14px;line-height:1.4}
+.slide.tight .card{padding:16px 18px}
+.slide.tight p.t{font-size:14px;line-height:1.45}
+.slide.tight .two.narrow>div{padding:16px 20px}
+.slide.tight .kicker{font-size:20px;padding:13px 18px}
+.slide.tight .stat>div{padding:13px 18px}
+
+.mono{font-family:"IBM Plex Mono",monospace}
+.lbl{font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:600;
+  text-transform:uppercase;letter-spacing:.22em}
+.red{color:var(--blood)}.redk{color:var(--blood-ink)}.gld{color:var(--gold-ink)}
+.ashc{color:var(--ash)}
+h3{font-family:"Anton",sans-serif;font-weight:400;text-transform:uppercase;
+  font-size:21px;line-height:1.06;letter-spacing:.01em}
+p.t{font-size:15px;line-height:1.5;color:var(--ash);margin-top:8px}
+code,.code{font-family:"IBM Plex Mono",monospace}
+.codeblk{background:var(--coal);color:#eceae4;border-left:4px solid var(--blood);
+  padding:13px 16px;font-size:12.5px;line-height:1.7;letter-spacing:-.01em}
+.codeblk .k{color:var(--gold)}.codeblk .c{color:#8b8b98}
+
+.card{border:1px solid var(--line);background:var(--panel);padding:20px 22px}
+.card.pl{background:var(--paper)}
+.tick{display:flex;gap:11px;font-size:14.5px;line-height:1.45;margin-top:11px}
+.tick::before{content:"";flex:none;width:7px;height:7px;margin-top:6px;background:var(--blood)}
+.tick.g::before{background:var(--gold)}
+.tick b{font-weight:700;color:var(--ink)}
+.tick span{color:var(--ash)}
+
+/* ── slide 1 ───────────────────────────────────────────── */
+.hero{display:grid;grid-template-columns:1fr 268px;gap:56px;align-items:center;flex:1}
+.wordmark{font-family:"Anton",sans-serif;font-size:124px;line-height:.82;
+  text-transform:uppercase;letter-spacing:-.012em;margin-top:26px}
+.wordmark .sh{color:var(--blood)}
+.tagline{font-size:25px;line-height:1.28;margin-top:24px;max-width:600px;font-weight:500}
+.bet{margin-top:22px;display:inline-block;background:var(--ink);color:#fff;
+  padding:9px 16px;font-family:"Anton",sans-serif;font-size:22px;
+  text-transform:uppercase;letter-spacing:.02em}
+.stack{margin-top:26px;display:flex;flex-wrap:wrap;gap:7px}
+.chip{font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:600;
+  text-transform:uppercase;letter-spacing:.14em;border:1px solid var(--line2);
+  padding:5px 9px;color:var(--ash)}
+
+/* phone mock */
+.phone{width:268px;height:477px;background:var(--coal);position:relative;overflow:hidden;
+  border:1px solid var(--coal)}
+.phone .band{position:absolute;inset:0;
+  background:linear-gradient(160deg,#2a2a34 0%,#16161d 46%,#241014 100%)}
+.phone .grain{position:absolute;inset:0;
+  background:repeating-linear-gradient(135deg,rgba(255,255,255,.045) 0 2px,transparent 2px 15px)}
+.phone .tag{position:absolute;top:14px;left:14px;font-family:"IBM Plex Mono",monospace;
+  font-size:9px;font-weight:600;letter-spacing:.2em;color:#fff;background:var(--blood);padding:4px 7px}
+.phone .score{position:absolute;top:14px;right:14px;width:44px;height:44px;border-radius:50%;
+  border:2.5px solid var(--gold);display:flex;align-items:center;justify-content:center;
+  font-family:"Anton",sans-serif;font-size:19px;color:var(--gold)}
+.phone .hook{position:absolute;left:16px;right:16px;top:104px;font-family:"Anton",sans-serif;
+  font-size:26px;line-height:1.02;text-transform:uppercase;color:#fff;
+  text-shadow:0 2px 14px rgba(0,0,0,.9)}
+.phone .cap{position:absolute;left:16px;right:16px;bottom:52px;text-align:center;
+  font-family:"Anton",sans-serif;font-size:23px;line-height:1.08;text-transform:uppercase;
+  color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.95)}
+.phone .cap i{font-style:normal;color:var(--gold)}
+.phone .bar{position:absolute;left:0;right:0;bottom:0;height:5px;background:rgba(255,255,255,.16)}
+.phone .bar i{position:absolute;left:0;top:0;bottom:0;width:62%;background:var(--blood)}
+.phone .meta{position:absolute;left:16px;bottom:16px;font-family:"IBM Plex Mono",monospace;
+  font-size:9px;letter-spacing:.16em;color:rgba(255,255,255,.62)}
+
+/* ── slide 2 ───────────────────────────────────────────── */
+.three{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid var(--line)}
+.three>div{padding:24px 26px 20px;border-right:1px solid var(--line)}
+.three>div:last-child{border-right:0}
+.three .n{font-family:"Anton",sans-serif;font-size:40px;line-height:.8;color:var(--line2)}
+.costband{margin-top:26px;background:var(--ink);color:#fff;padding:22px 28px;
+  display:flex;align-items:center;gap:26px}
+.costband .q{font-family:"Anton",sans-serif;font-size:29px;line-height:1.08;
+  text-transform:uppercase;flex:1}
+.costband .q u{text-decoration:none;color:var(--blood)}
+.costband .z{font-family:"IBM Plex Mono",monospace;font-size:11px;line-height:1.75;
+  color:#a4a4b2;letter-spacing:.05em;border-left:1px solid #35353f;padding-left:26px;width:330px}
+
+/* ── slide 3 ───────────────────────────────────────────── */
+.bet-grid{display:grid;grid-template-columns:1fr 400px;gap:44px;flex:1;min-height:0}
+.boxwrap{display:flex;flex-direction:column;gap:0}
+.bbox{background:var(--coal);color:#fff;padding:18px 20px 20px}
+.sbox{background:var(--panel);border:1px solid var(--line2);padding:18px 20px 20px}
+.boxttl{font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:600;
+  letter-spacing:.24em;text-transform:uppercase;margin-bottom:13px}
+.nodes{display:flex;gap:9px;flex-wrap:wrap}
+.node{border:1px solid #3a3a46;padding:9px 11px;font-size:12.5px;line-height:1.25;
+  font-weight:600;flex:1;min-width:0;text-align:center;color:#e8e6e0}
+.sbox .node{border-color:var(--line2);color:var(--ink);background:#fff}
+.wire{display:flex;align-items:center;gap:14px;padding:14px 0}
+.wire .ln{flex:1;border-top:2px dashed var(--blood);position:relative}
+.wire .pill{font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:600;
+  letter-spacing:.14em;text-transform:uppercase;background:var(--blood);color:#fff;padding:5px 10px}
+.nope{margin-top:14px;border:1.5px solid var(--line2);padding:11px 14px;
+  font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.05em;color:var(--ash);
+  background:repeating-linear-gradient(135deg,rgba(224,27,44,.05) 0 3px,transparent 3px 12px)}
+.nope b{color:var(--blood-ink)}
+
+/* ── slide 4 pipeline ──────────────────────────────────── */
+.lane{border:1px solid var(--line);position:relative}
+.lane .tag{position:absolute;top:-1px;left:-1px;font-family:"IBM Plex Mono",monospace;
+  font-size:9.5px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;
+  padding:5px 10px;color:#fff}
+.stages{display:grid;grid-template-columns:repeat(6,1fr);gap:0}
+.st{padding:34px 15px 16px;border-right:1px solid var(--line);position:relative}
+.st:last-child{border-right:0}
+.st .num{font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:600;
+  letter-spacing:.2em;color:var(--blood)}
+.st h4{font-family:"Anton",sans-serif;font-size:16px;text-transform:uppercase;
+  line-height:1.05;margin-top:5px}
+.st p{font-size:12.5px;line-height:1.42;color:var(--ash);margin-top:6px}
+.st .who{margin-top:9px;font-family:"IBM Plex Mono",monospace;font-size:9px;font-weight:600;
+  letter-spacing:.16em;text-transform:uppercase;padding:3px 6px;display:inline-block}
+.who.b{background:var(--ink);color:#fff}
+.who.s{background:var(--blood);color:#fff}
+.hops{display:grid;grid-template-columns:repeat(6,1fr);margin-top:12px}
+.hop{grid-column:span 1;text-align:center;font-family:"IBM Plex Mono",monospace;
+  font-size:10px;letter-spacing:.1em;color:var(--ash2);padding-top:4px}
+.hop.on{color:var(--blood-ink);font-weight:600}
+.hop .arw{display:block;color:var(--blood);font-size:13px;line-height:1}
+
+/* ── generic 2col ──────────────────────────────────────── */
+.two{display:grid;grid-template-columns:1fr 1fr;gap:28px;flex:1;min-height:0}
+.two>div{display:flex;flex-direction:column}
+.two.narrow{grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--line);flex:none}
+.two.narrow>div{padding:22px 24px}
+.two.narrow>div:first-child{border-right:1px solid var(--line)}
+
+.stat{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid var(--line);margin-top:20px}
+.stat>div{padding:16px 18px;border-right:1px solid var(--line)}
+.stat>div:last-child{border-right:0}
+.stat .v{font-family:"Anton",sans-serif;font-size:33px;line-height:.92;color:var(--blood)}
+.stat .k{font-family:"IBM Plex Mono",monospace;font-size:9.5px;font-weight:600;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--ash);margin-top:7px}
+
+.kicker{margin-top:auto;background:var(--panel2);border-left:5px solid var(--blood);
+  padding:15px 20px;font-family:"Anton",sans-serif;font-size:22px;line-height:1.14;
+  text-transform:uppercase}
+.kicker.dark{background:var(--ink);color:#fff;border-left-color:var(--gold)}
+.kicker u{text-decoration:none;color:var(--blood)}
+.kicker.dark u{color:var(--gold)}
+
+/* ── slide 7 anatomy ───────────────────────────────────── */
+.anat{display:grid;grid-template-columns:296px 1fr;gap:40px;flex:1;min-height:0}
+.anat>div:last-child{display:flex;flex-direction:column;justify-content:space-between;padding:4px 0 10px}
+.clipcard{border:1px solid var(--line2);background:#fff;align-self:start}
+.cc-vid{height:132px;background:linear-gradient(150deg,#282832,#15151d 60%,#2a1014);
+  position:relative}
+.cc-vid .kar{position:absolute;left:12px;right:12px;bottom:12px;text-align:center;
+  font-family:"Anton",sans-serif;font-size:15px;text-transform:uppercase;color:#fff;
+  text-shadow:0 2px 10px rgba(0,0,0,.95)}
+.cc-vid .kar i{font-style:normal;color:var(--gold)}
+.cc-vid .t{position:absolute;top:10px;left:10px;font-family:"IBM Plex Mono",monospace;
+  font-size:9px;letter-spacing:.14em;color:#fff;background:rgba(0,0,0,.55);padding:3px 6px}
+.cc-b{padding:14px 15px;border-bottom:1px solid var(--line)}
+.cc-b:last-child{border-bottom:0}
+.cc-h{font-family:"Anton",sans-serif;font-size:17px;text-transform:uppercase;line-height:1.04}
+.bars{margin-top:10px;display:flex;flex-direction:column;gap:5px}
+.bar{display:flex;align-items:center;gap:8px;font-family:"IBM Plex Mono",monospace;font-size:9px;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--ash)}
+.bar .tr{flex:1;height:5px;background:var(--panel2)}
+.bar .tr i{display:block;height:100%;background:var(--blood)}
+.bar .vv{color:var(--ink);font-weight:600;width:20px;text-align:right}
+.cap-txt{font-size:12px;line-height:1.5;color:var(--ash)}
+.cap-txt b{color:var(--blood-ink)}
+.warn{background:#fdeced;border-left:4px solid var(--blood);padding:9px 12px;
+  font-family:"IBM Plex Mono",monospace;font-size:9.5px;line-height:1.6;
+  letter-spacing:.06em;color:var(--blood-ink);text-transform:uppercase}
+.callout{display:flex;gap:14px;margin-bottom:15px}
+.callout .dot{flex:none;width:24px;height:24px;border:1.5px solid var(--blood);
+  color:var(--blood);font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:600;
+  display:flex;align-items:center;justify-content:center;margin-top:2px}
+.callout h5{font-family:"Anton",sans-serif;font-size:15px;text-transform:uppercase;line-height:1.05}
+.callout p{font-size:13px;line-height:1.45;color:var(--ash);margin-top:4px}
+
+/* ── slide 10 ──────────────────────────────────────────── */
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-top:2px solid var(--ink);
+  border-bottom:1px solid var(--line)}
+.steps>div{padding:20px 22px 22px;border-right:1px solid var(--line)}
+.steps>div:last-child{border-right:0}
+.steps .n{font-family:"Anton",sans-serif;font-size:31px;color:var(--blood);line-height:.9}
+.steps h4{font-family:"Anton",sans-serif;font-size:16px;text-transform:uppercase;
+  margin-top:9px;line-height:1.06}
+.steps p{font-size:12.5px;line-height:1.45;color:var(--ash);margin-top:6px}
+.final{margin:auto 0 6px;text-align:center}
+.steps{flex:none}
+.final .big{font-family:"Anton",sans-serif;font-size:60px;line-height:.95;text-transform:uppercase}
+.final .big u{text-decoration:none;color:var(--blood)}
+.final .s{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.26em;
+  text-transform:uppercase;color:var(--ash);margin-top:14px}
+</style>
+</head>
+<body>
+
+<!-- ══ 01 TITLE ══ -->
+<section class="slide">
+  <div class="hero">
+    <div>
+      <p class="lbl redk" style="letter-spacing:.34em">Cursor Hackathon · 8-hour build · How it works</p>
+      <h2 class="wordmark">Hook<span class="sh">shot</span></h2>
+      <p class="tagline">Drop a video. Get back ranked, captioned,
+        ready-to-post vertical clips.</p>
+      <div class="bet">The video never leaves your browser</div>
+      <div class="stack">
+        <span class="chip">Next.js 16</span><span class="chip">ffmpeg.wasm</span>
+        <span class="chip">whisper-1</span><span class="chip">gpt-5</span>
+        <span class="chip">Canvas + MediaRecorder</span><span class="chip">0 buckets</span>
+      </div>
+      <p style="margin-top:30px;padding-top:18px;border-top:1px solid var(--line);
+        font-size:15.5px;line-height:1.5;color:var(--ash);max-width:560px">
+        An OpusClip-style clipping machine that finds the postable moments in long footage,
+        writes the copy, burns the captions and renders the vertical cut — without a single
+        frame of your video ever touching a server.</p>
+    </div>
+    <div class="phone">
+      <div class="band"></div><div class="grain"></div>
+      <span class="tag">Pimblett</span>
+      <div class="score">87</div>
+      <div class="hook">"You're getting<br>slept, mate"</div>
+      <div class="cap">HE SAID IT <i>TO HIS FACE</i></div>
+      <span class="meta">0:12 – 0:34 · 1080×1920</span>
+      <div class="bar"><i></i></div>
+    </div>
+  </div>
+  <div class="foot"><span>HookShot — how it works</span><span>01 / 10</span></div>
+</section>
+
+<!-- ══ 02 PROBLEM ══ -->
+<section class="slide">
+  <div class="eyebrow"><span>02 — The problem</span><span class="rt">HookShot</span></div>
+  <h1>Clipping is a grind.<br>And every tool makes you <em>upload first.</em></h1>
+  <p class="sub">A 90-minute press conference holds maybe six postable moments. Finding them,
+    cutting them, reframing them and writing the copy is a whole afternoon — and on every
+    existing tool, that afternoon starts with a progress bar.</p>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="three">
+      <div>
+        <div class="n">01</div>
+        <h3 style="margin-top:8px">Scrubbing by hand</h3>
+        <p class="t">Someone drags a playhead across ninety minutes of talking, hunting for
+          the six seconds where the room went quiet. There is no index for "that was the line."</p>
+      </div>
+      <div>
+        <div class="n">02</div>
+        <h3 style="margin-top:8px">The upload tax</h3>
+        <p class="t">Every clip service wants your 2 GB file on their servers before it does
+          anything. You wait on your uplink, then their queue — and your unreleased footage
+          now lives on someone else's disk.</p>
+      </div>
+      <div>
+        <div class="n">03</div>
+        <h3 style="margin-top:8px">Then the busywork</h3>
+        <p class="t">Cut. Reframe to 9:16. Caption every word. Write a hook, a caption and
+          hashtags per platform. Repeat six times, per video, per week.</p>
+      </div>
+    </div>
+    <div class="costband">
+      <div class="q">By the time the clip is posted,<br>the moment has <u>already moved on.</u></div>
+      <div class="z">The window on fight-week content is hours,<br>not days. Whatever the workflow
+        costs in latency,<br>it costs in reach.</div>
+    </div>
+  </div>
+  <div class="foot"><span>HookShot — how it works</span><span>02 / 10</span></div>
+  <div class="ghost">02</div>
+</section>
+
+<!-- ══ 03 THE BET ══ -->
+<section class="slide">
+  <div class="eyebrow"><span>03 — The architectural bet</span><span class="rt">Iron rule zero</span></div>
+  <h1>The video never leaves<br>the <em>browser.</em></h1>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="bet-grid">
+      <div class="boxwrap">
+        <div class="bbox">
+          <div class="boxttl" style="color:var(--gold)">Browser — everything that touches pixels</div>
+          <div class="nodes">
+            <div class="node">Source<br>mp4</div>
+            <div class="node">ffmpeg.wasm<br>extract</div>
+            <div class="node">Merge +<br>snap</div>
+            <div class="node">Cut &amp;<br>caption</div>
+            <div class="node">Export<br>MP4 · WebM</div>
+          </div>
+        </div>
+        <div class="wire">
+          <div class="ln"></div>
+          <span class="pill">↓ audio chunks &lt; 4 MB &nbsp;·&nbsp; text ↑</span>
+          <div class="ln"></div>
+        </div>
+        <div class="sbox">
+          <div class="boxttl redk">Server — audio and text only, three thin routes</div>
+          <div class="nodes">
+            <div class="node">/api/youtube<br><span class="mono" style="font-size:10px;color:var(--ash)">yt-dlp stream</span></div>
+            <div class="node">/api/transcribe<br><span class="mono" style="font-size:10px;color:var(--ash)">whisper-1</span></div>
+            <div class="node">/api/moments<br><span class="mono" style="font-size:10px;color:var(--ash)">gpt-5 JSON</span></div>
+          </div>
+          <div class="nope"><b>Never crosses the wire:</b> the source video. No object storage,
+            no upload queue, no transcode farm, no egress bill. Nothing to leak.</div>
+        </div>
+      </div>
+      <div>
+        <div class="tick"><span><b>Work starts on drop.</b> No upload wait — audio extraction
+          begins the instant the file lands, on a file that never moves.</span></div>
+        <div class="tick"><span><b>It fits the platform by design.</b> Vercel caps request bodies
+          at 4.5 MB. Audio chunks are engineered to 1.4 MB. The limit stopped being a problem
+          and became the spec.</span></div>
+        <div class="tick"><span><b>Zero infrastructure.</b> Three stateless route handlers.
+          No database, no bucket, no worker queue, no job table — so there is nothing to
+          operate and nothing to bill.</span></div>
+        <div class="tick"><span><b>Your footage stays yours.</b> Unreleased promo material
+          never lands on a third-party disk, because it never leaves the tab.</span></div>
+        <div class="kicker" style="margin-top:26px">Everyone else moves the video<br>
+          to the compute. <u>We moved the compute to the video.</u></div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>HookShot — how it works</span><span>03 / 10</span></div>
+</section>
+
+<!-- ══ 04 PIPELINE ══ -->
+<section class="slide">
+  <div class="eyebrow"><span>04 — End to end</span><span class="rt">Six stages · three network hops</span></div>
+  <h1>The pipeline</h1>
+  <p class="sub">Drop to downloadable clip. The only things that ever cross the network are
+    compressed audio going out, and text coming back.</p>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="lane">
+      <div class="stages">
+        <div class="st">
+          <div class="num">STAGE 01</div><h4>Ingest</h4>
+          <p>Drop an mp4, or paste a YouTube link and let yt-dlp stream it straight through
+            the route — the server keeps nothing.</p>
+          <span class="who b">Browser</span>
+        </div>
+        <div class="st">
+          <div class="num">STAGE 02</div><h4>Extract</h4>
+          <p>ffmpeg.wasm loads in the tab and rips mono 32 kbps audio, segmented into
+            ~6-minute chunks under 4 MB.</p>
+          <span class="who b">Browser · WASM</span>
+        </div>
+        <div class="st">
+          <div class="num">STAGE 03</div><h4>Transcribe</h4>
+          <p>Chunks post to whisper-1, three in flight, returning word-level timestamps
+            and segments.</p>
+          <span class="who s">Server · Whisper</span>
+        </div>
+        <div class="st">
+          <div class="num">STAGE 04</div><h4>Merge</h4>
+          <p>Chunk offsets prefix-summed from real durations, forced monotonic, snapped to
+            sentence edges. Pure code.</p>
+          <span class="who b">Browser · code</span>
+        </div>
+        <div class="st">
+          <div class="num">STAGE 05</div><h4>Judge</h4>
+          <p>The text timeline goes to gpt-5, which picks the moments worth posting and
+            writes the copy. Output is validated field by field.</p>
+          <span class="who s">Server · GPT-5</span>
+        </div>
+        <div class="st">
+          <div class="num">STAGE 06</div><h4>Cut &amp; export</h4>
+          <p>Keyframe-aligned <span class="mono">-c copy</span> MP4 with a matched .srt, or a
+            1080×1920 canvas render with captions burned in.</p>
+          <span class="who b">Browser · Canvas</span>
+        </div>
+      </div>
+    </div>
+    <div class="hops">
+      <div class="hop">local file</div>
+      <div class="hop">stays local</div>
+      <div class="hop on"><span class="arw">↑↓</span>audio out · words back</div>
+      <div class="hop">stays local</div>
+      <div class="hop on"><span class="arw">↑↓</span>text out · JSON back</div>
+      <div class="hop">stays local</div>
+    </div>
+    <div class="kicker">A 2 GB source becomes about 10 MB of audio<br>
+      and a few kilobytes of JSON. <u>That is the entire network cost.</u></div>
+  </div>
+  <div class="foot"><span>HookShot — how it works</span><span>04 / 10</span></div>
+</section>
+
+<!-- ══ 05 CHUNKING ══ -->
+<section class="slide tight">
+  <div class="eyebrow"><span>05 — Inside the tab</span><span class="rt">lib/ffmpeg.ts</span></div>
+  <h1>Engineered against<br>a <em>4.5 MB wall</em></h1>
+  <p class="sub">Vercel rejects request bodies over 4.5 MB. Rather than route around the limit,
+    the audio format was derived from it — every constant below is reverse-engineered from
+    that one number.</p>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="two">
+      <div>
+        <div class="codeblk">
+          <span class="c"># one pass, in the browser, no server involved</span><br>
+          ffmpeg -i in.mp4 <span class="k">-vn</span> <span class="k">-ac</span> 1 <span class="k">-ar</span> 16000 <span class="k">-b:a</span> 32k \<br>
+          &nbsp;&nbsp;<span class="k">-f</span> segment <span class="k">-segment_time</span> 360 chunk%03d.mp3
+        </div>
+        <div class="stat" style="margin-top:18px">
+          <div><div class="v">360s</div><div class="k">Segment</div></div>
+          <div><div class="v">1.4<span style="font-size:19px">MB</span></div><div class="k">Typical chunk</div></div>
+          <div><div class="v">4<span style="font-size:19px">MB</span></div><div class="k">Hard ceiling</div></div>
+          <div><div class="v">3</div><div class="k">In flight</div></div>
+        </div>
+        <div class="card" style="margin-top:18px">
+          <h3>Do the arithmetic</h3>
+          <p class="t">A 40-minute presser becomes seven files of roughly 1.4 MB — about
+            10 MB total, uploaded in parallel while the tab stays responsive. The 2 GB source
+            never moves an inch. Every chunk is size-checked before it is sent; if mp3
+            encoding is unavailable, the fallback drops to 2-minute 16 kHz WAV, which lands
+            at 3.8 MB — still inside the wall.</p>
+        </div>
+      </div>
+      <div>
+        <div class="tick"><span><b>Lazy, self-hosted, single-thread.</b> The 32 MB wasm core
+          loads only after a file drops, behind a progress bar. Single-thread on purpose — the
+          multithreaded core would demand COOP/COEP headers.</span></div>
+        <div class="tick"><span><b>Offsets come from reality, not arithmetic.</b> Chunk start
+          times are prefix-summed from the durations Whisper actually reports, not the nominal
+          360-second grid — encoder drift would otherwise slide captions late.</span></div>
+        <div class="tick"><span><b>Timestamps are forced monotonic.</b> Whisper occasionally
+          emits a word that starts before the previous one ended. Code repairs the sequence
+          before anything downstream reads it.</span></div>
+        <div class="tick"><span><b>The failure modes are handled.</b> No audio track, a stale
+          core, a chunk that busts the ceiling — each has an explicit branch and a readable
+          error, because a dead dropzone in a demo is fatal.</span></div>
+        <div class="kicker dark">The platform limit didn't get worked
+          around. <u>It became the format.</u></div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>HookShot — how it works</span><span>05 / 10</span></div>
+</section>
+
+<!-- ══ 06 SPLIT ══ -->
+<section class="slide tight">
+  <div class="eyebrow"><span>06 — The core discipline</span><span class="rt">Why the timing never drifts</span></div>
+  <h1>The model judges.<br>The <em>code computes.</em></h1>
+  <p class="sub">The split is absolute, and it is the reason this holds together. A language
+    model is excellent at deciding which twenty seconds are worth posting, and unreliable at
+    arithmetic. So it never does any.</p>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="two narrow" style="height:auto">
+      <div>
+        <p class="lbl redk">The model decides</p>
+        <div class="tick" style="margin-top:13px"><span>Which twenty seconds are worth posting</span></div>
+        <div class="tick"><span>The hook line that opens the clip</span></div>
+        <div class="tick"><span>Caption, hashtags, and the audience read</span></div>
+        <div class="tick"><span>Honest compliance flags on every clip</span></div>
+      </div>
+      <div style="background:var(--panel)">
+        <p class="lbl gld">The code decides</p>
+        <div class="tick g" style="margin-top:13px"><span>Chunk offsets and timestamp merging</span></div>
+        <div class="tick g"><span>Snapping cuts to real sentence boundaries</span></div>
+        <div class="tick g"><span>Keyframe-aligned cutting and concatenation</span></div>
+        <div class="tick g"><span>Subtitle timing across every jump cut</span></div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:20px">
+      <div class="card pl">
+        <h3>Nothing the model returns is trusted</h3>
+        <p class="t">Every field is coerced server-side. Scores clamped to range. Spans clamped
+          in-bounds, sorted, overlaps merged, anything under 4 seconds dropped, capped at three
+          spans and 120 seconds. Missing compliance data defaults to the cautious value, never
+          the convenient one.</p>
+      </div>
+      <div class="card pl">
+        <h3>The hashtag is appended in code</h3>
+        <p class="t">Campaign rules require every caption to end with
+          <span class="mono redk">#UFCClips</span>. The prompt asks for it — then
+          <span class="mono">ensureUFCClipsHashtag()</span> appends it anyway if it's missing.
+          A prompt is a request; code is a guarantee.</p>
+      </div>
+    </div>
+
+    <div class="kicker">Every number in this product is computed.<br>
+      <u>Not one of them is guessed by a language model.</u></div>
+  </div>
+  <div class="foot"><span>HookShot — how it works</span><span>06 / 10</span></div>
+</section>
+
+<!-- ══ 07 CLIP CARD ══ -->
+<section class="slide">
+  <div class="eyebrow"><span>07 — The output</span><span class="rt">components/ClipCard.tsx</span></div>
+  <h1>What comes back</h1>
+  <p class="sub">Five to eight clips, ranked — so the best one is on top, not the first one found.</p>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="anat">
+      <div class="clipcard">
+        <div class="cc-vid">
+          <span class="t">0:12 – 0:34 · 22s</span>
+          <div class="kar">HE SAID IT <i>TO HIS FACE</i></div>
+        </div>
+        <div class="cc-b">
+          <div class="cc-h">"You're getting slept, mate"</div>
+          <div class="bars">
+            <div class="bar"><span style="width:52px">Hook</span><span class="tr"><i style="width:92%"></i></span><span class="vv">92</span></div>
+            <div class="bar"><span style="width:52px">Emotion</span><span class="tr"><i style="width:84%"></i></span><span class="vv">84</span></div>
+            <div class="bar"><span style="width:52px">Quotable</span><span class="tr"><i style="width:90%"></i></span><span class="vv">90</span></div>
+            <div class="bar"><span style="width:52px">Loop</span><span class="tr"><i style="width:78%"></i></span><span class="vv">78</span></div>
+          </div>
+        </div>
+        <div class="cc-b">
+          <p class="cap-txt">Paddy never blinked. Ilia had no answer.
+            <b>#UFCClips</b> #UFC329 #Pimblett</p>
+        </div>
+        <div class="cc-b"><div class="warn">⚠ Walkout risk — broadcast footage</div></div>
+      </div>
+      <div>
+        <div class="callout"><div class="dot">1</div><div>
+          <h5>Ranked by a four-part score</h5>
+          <p>Hook, emotion, quotability, loopability. The total orders the grid, so a reviewer
+            reads top-down instead of hunting.</p></div></div>
+        <div class="callout"><div class="dot">2</div><div>
+          <h5>Cuts land on sentences</h5>
+          <p>The model proposes rough bounds; code snaps them to real sentence edges using word
+            timestamps. Clips never open mid-word or die on a half-finished thought.</p></div></div>
+        <div class="callout"><div class="dot">3</div><div>
+          <h5>Jump cuts remove the dead air</h5>
+          <p>When a setup and its payoff sit forty seconds apart, the clip is assembled from up
+            to three non-adjacent spans, stitched with a fast white flash. Tight arc, no filler.</p></div></div>
+        <div class="callout"><div class="dot">4</div><div>
+          <h5>Copy that knows who it's for</h5>
+          <p>Name your audience or leave it blank and the model infers who would share this from
+            the transcript itself — then tunes hook, caption and hashtags to them.</p></div></div>
+        <div class="callout" style="margin-bottom:0"><div class="dot">5</div><div>
+          <h5>Compliance stays visible</h5>
+          <p>In-fight broadcast risk, walkout risk and low-value risk ride on every clip and
+            render as a banner. The tool flags its own risky output rather than hiding it.</p></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>HookShot — how it works</span><span>07 / 10</span></div>
+</section>
+
+<!-- ══ 08 EXPORT ══ -->
+<section class="slide">
+  <div class="eyebrow"><span>08 — Export</span><span class="rt">lib/ffmpeg.ts · lib/compositor.ts · lib/srt.ts</span></div>
+  <h1>Two ways out.<br>Both rendered <em>in the tab.</em></h1>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="two narrow" style="height:auto">
+      <div>
+        <p class="lbl redk">MP4 + .srt — works everywhere</p>
+        <h3 style="margin-top:9px">Lossless, instant, source resolution</h3>
+        <p class="t">A keyframe-aligned <span class="mono">-c copy</span> cut: no re-encode, so
+          it finishes in about a second and loses nothing. The sidecar .srt is timed against the
+          cut's real timeline. Multi-span clips are cut per segment and stream-copy concatenated.</p>
+      </div>
+      <div style="background:var(--panel)">
+        <p class="lbl gld">WebM 1080×1920 — the post-ready short</p>
+        <h3 style="margin-top:9px">Vertical, captions burned in</h3>
+        <p class="t">A canvas compositor draws the frame contained over a blurred cover fill —
+          nothing cropped — with karaoke captions, the hook title over the first three seconds,
+          and a progress bar, captured through MediaRecorder. No server render.</p>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:22px;background:var(--paper);border-color:var(--line2)">
+      <p class="lbl redk">The hard part — and it is genuinely hard</p>
+      <h3 style="margin-top:8px">Stream copy can only begin on a keyframe</h3>
+      <p class="t" style="margin-top:7px">Ask ffmpeg to cut at 12.4s and the MP4 really starts at
+        the keyframe at or before it — maybe 11.1s. Naive captioning fires early and drifts
+        further with every jump cut. So the keyframe is probed with ffprobe, the true start is
+        returned with the blob, and subtitles are timed against a virtual timeline built from
+        the real segment lengths:</p>
+      <div class="codeblk" style="margin-top:12px">
+        <span class="k">offset[i]</span> = sum over j &lt; i of ( end[j] − actualStart[j] )<br>
+        a word at source time <span class="k">t</span> in segment <span class="k">i</span>
+        lands at ( <span class="k">t</span> − actualStart[i] ) + offset[i]
+        <span class="c">&nbsp;&nbsp;// cues never straddle a segment edge</span>
+      </div>
+      <p class="t" style="margin-top:10px">Captions line up exactly — across every jump cut, on
+        every player. And exports carry no logo and no watermark. Ever.</p>
+    </div>
+  </div>
+  <div class="foot"><span>HookShot — how it works</span><span>08 / 10</span></div>
+</section>
+
+<!-- ══ 09 UNDER PRESSURE ══ -->
+<section class="slide tight">
+  <div class="eyebrow"><span>09 — Eight hours</span><span class="rt">Decisions and honest limits</span></div>
+  <h1>What it cost,<br>and what it <em>still can't do</em></h1>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="two">
+      <div>
+        <p class="lbl redk">Decisions that paid</p>
+        <div class="tick" style="margin-top:13px"><span><b>76s → 23s on moment analysis.</b>
+          Default reasoning effort was burning 75 seconds on a short transcript and creeping
+          toward the function timeout. Dropping to minimal effort made it both fast and safe —
+          latency and reliability turned out to be the same fix.</span></div>
+        <div class="tick"><span><b>A model chain, not a model.</b> gpt-5 with a gpt-5-mini
+          fallback: if the primary errors or returns nothing usable, the next model runs before
+          the user ever sees a failure.</span></div>
+        <div class="tick"><span><b>Cuts are serialized.</b> ffmpeg.wasm is a singleton with one
+          filesystem and fixed output names, so two clip cards exporting at once would silently
+          clobber each other. A promise queue makes that impossible.</span></div>
+        <div class="tick"><span><b>Every route is rate-limited.</b> A per-IP sliding window in
+          front of all three handlers, because a public demo and an OpenAI key are a bad pair
+          without one.</span></div>
+        <div class="kicker" style="font-size:19px">Nothing here is a stub.<br>
+          <u>Every path in the demo is the real path.</u></div>
+      </div>
+      <div>
+        <p class="lbl gld">What it honestly can't do yet</p>
+        <div class="tick g" style="margin-top:13px"><span><b>WebM export is Chrome-first.</b>
+          It rides on MediaRecorder, which is flaky in Safari. The MP4 + .srt path is the
+          fallback that always works.</span></div>
+        <div class="tick g"><span><b>MP4 cuts can open early.</b> Keyframe spacing is the
+          source's business, so a clip may start up to a couple of seconds before the requested
+          point. Captions stay correct; the video just has a short runway.</span></div>
+        <div class="tick g"><span><b>The rate limiter is per-instance.</b> In-memory, so each
+          warm serverless instance keeps its own window. It guards a budget; it is not a
+          distributed defense.</span></div>
+        <div class="tick g"><span><b>Memory is the real ceiling.</b> ffmpeg.wasm holds the whole
+          file in the tab, so link pulls are capped at 500 MB and very long sources need
+          trimming first.</span></div>
+      </div>
+    </div>
+    <div class="stat" style="flex:none">
+      <div><div class="v">~3.8k</div><div class="k">Lines of TypeScript</div></div>
+      <div><div class="v">3</div><div class="k">API routes, all thin</div></div>
+      <div><div class="v">0</div><div class="k">Databases · buckets · queues</div></div>
+      <div><div class="v">0<span style="font-size:19px"> bytes</span></div><div class="k">Of video stored, ever</div></div>
+    </div>
+  </div>
+  <div class="foot"><span>HookShot — how it works</span><span>09 / 10</span></div>
+</section>
+
+<!-- ══ 10 CLOSE ══ -->
+<section class="slide">
+  <div class="eyebrow"><span>10 — See it run</span><span class="rt">Sixty seconds, start to finish</span></div>
+  <h1>Drop a tape.<br>Watch it <em>work.</em></h1>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="steps">
+      <div><div class="n">01</div><h4>Drop or paste</h4>
+        <p>An mp4 goes in, or a YouTube link. ffmpeg.wasm wakes up behind a progress bar and
+          starts ripping audio immediately.</p></div>
+      <div><div class="n">02</div><h4>Watch the stages</h4>
+        <p>Extract, transcribe chunk by chunk, merge, judge. Every stage narrates itself, so
+          the wait never feels like a hang.</p></div>
+      <div><div class="n">03</div><h4>Read the grid</h4>
+        <p>Ranked clip cards, each with a live karaoke preview, a hook title, a ready-to-paste
+          caption and its compliance flags.</p></div>
+      <div><div class="n">04</div><h4>Export and post</h4>
+        <p>One click for a vertical short with captions burned in, or MP4 + .srt for an editor.
+          Both render in the tab.</p></div>
+    </div>
+    <div class="final">
+      <div class="big">And the video<br><u>never left the browser.</u></div>
+      <div class="s">HookShot · built in 8 hours · Next.js 16 · ffmpeg.wasm · whisper-1 · gpt-5</div>
+    </div>
+  </div>
+  <div class="foot"><span>HookShot — how it works</span><span>10 / 10</span></div>
+</section>
+
+</body>
+</html>
