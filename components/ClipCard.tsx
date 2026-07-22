@@ -347,7 +347,8 @@ export default function ClipCard({
         segments,
         onProgress: (frac) => setRenderPct(frac),
       });
-      downloadBlob(blob, `${base}-9x16.webm`);
+      const ext = blob.type.includes("mp4") ? "mp4" : "webm";
+      downloadBlob(blob, `${base}-9x16.${ext}`);
     } catch (err) {
       setExportError(err instanceof Error ? err.message : "9:16 render failed");
     } finally {
@@ -745,7 +746,7 @@ export default function ClipCard({
             <span className="relative">
               {busy === "vertical"
                 ? `Rendering ${Math.round(renderPct * 100)}%`
-                : "Export 9:16 WebM"}
+                : "Export 9:16 MP4"}
             </span>
             {busy === "vertical" && (
               <span

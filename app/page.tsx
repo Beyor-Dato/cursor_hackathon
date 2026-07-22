@@ -591,7 +591,7 @@ Any video · in your browser
                 setDragging(false);
                 acceptFile(e.dataTransfer.files?.[0]);
               }}
-              className={`reveal reveal-5 group relative mt-8 cursor-pointer overflow-hidden border-2 bg-coal/60 px-6 py-14 text-center transition-[border-color,background-color,box-shadow,scale] duration-200 sm:py-20 ${
+              className={`reveal reveal-5 group relative mt-8 cursor-pointer select-none overflow-hidden border-2 bg-coal/60 px-6 py-14 text-center transition-[border-color,background-color,box-shadow,scale] duration-200 sm:py-20 ${
                 dragging
                   ? "stripes-hot scale-[1.01] border-blood bg-blood/10 shadow-[0_0_60px_rgba(224,27,44,0.3)]"
                   : "stripes border-line hover:border-blood/70"
