@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "HookShot — UFC 329 Clip Machine";
+export const alt = "HookShot — AI Clip Machine";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -46,7 +46,7 @@ export default function OgImage() {
             letterSpacing: -20,
           }}
         >
-          329
+          9:16
         </div>
 
         <div
@@ -87,7 +87,7 @@ export default function OgImage() {
                 color: "#f5b52e",
               }}
             >
-              UFC 329 · McGREGOR vs HOLLOWAY 2
+PASTE A LINK · SHIP THE CLIP
             </div>
 
             <div
@@ -123,11 +123,11 @@ export default function OgImage() {
                 color: "#f2f0ea",
               }}
             >
-              THE CAMPAIGN CLIP MACHINE
+THE AI CLIP MACHINE
             </div>
 
             <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginTop: 36 }}>
-              {["VIDEO NEVER LEAVES THE BROWSER", "KARAOKE CAPTIONS", "#UFCClips"].map(
+              {["VIDEO NEVER LEAVES THE BROWSER", "KARAOKE CAPTIONS", "JUMP CUTS"].map(
                 (chip) => (
                   <div
                     key={chip}
@@ -138,7 +138,7 @@ export default function OgImage() {
                       letterSpacing: 1.5,
                       padding: "9px 15px",
                       border: "1.5px solid rgba(242,240,234,0.25)",
-                      color: chip === "#UFCClips" ? "#f5b52e" : "#9a9aa5",
+                      color: chip === "JUMP CUTS" ? "#f5b52e" : "#9a9aa5",
                     }}
                   >
                     {chip}

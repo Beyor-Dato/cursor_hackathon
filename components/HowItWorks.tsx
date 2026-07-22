@@ -7,12 +7,12 @@ const BEATS = [
   {
     n: "02",
     title: "Whisper finds the mic moments",
-    body: "Word-level transcript, then GPT scores every line for your audience — UFC 329 campaign content gets storyline tags on top.",
+    body: "Word-level transcript, then GPT scores every line for hook, emotion and quotability — tuned to your audience.",
   },
   {
     n: "03",
     title: "Export 9:16 with captions",
-    body: "Karaoke captions burned in, mp4 + .srt fallback, #UFCClips stamped on every post.",
+    body: "Karaoke captions burned in, jump cuts stitched, mp4 + .srt fallback — ready to post.",
   },
 ] as const;
 

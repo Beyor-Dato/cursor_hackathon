@@ -59,7 +59,7 @@ const PIPELINE = [
 const TRUST_CHIPS = [
   "Video stays in your browser",
   "Audience-aware captions",
-  "#UFCClips + compliance on campaign clips",
+  "Compliance flags on risky moments",
 ] as const;
 
 async function mapPool<T, R>(
@@ -447,7 +447,7 @@ export default function Home() {
           <div className="flex items-center gap-3">
             <span className="hidden items-center gap-2 border border-line px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.2em] text-ash sm:flex">
               <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-gold" />
-              Clip anything · UFC 329 kit inside
+              Paste a link · Ship the clip
             </span>
             {(stage.k === "ready" || stage.k === "error") && (
               <button
@@ -468,7 +468,7 @@ export default function Home() {
               aria-hidden
               className="ghost pointer-events-none absolute -top-10 right-0 hidden select-none font-display text-[15rem] leading-none tracking-tight lg:block xl:text-[20rem]"
             >
-              329
+              9:16
             </div>
 
             <p className="reveal reveal-1 flex items-center gap-3 font-mono text-xs uppercase tracking-[0.35em] text-blood-hot">
@@ -486,8 +486,8 @@ export default function Home() {
               Paste a YouTube link or drop any footage — podcasts, pressers,
               interviews, VODs. HookShot transcribes it, finds the viral
               moments for your audience and cuts caption-burned vertical
-              shorts. UFC 329 campaign content gets storyline tags and
-              compliance checks automatically.
+              shorts with jump cuts. Every clip is scored, captioned and
+              ready to post.
             </p>
 
             {ytAvailable && (
