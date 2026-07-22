@@ -38,9 +38,17 @@ export type Compliance = {
   low_value_risk: "low" | "med" | "high";
 };
 
+/** One contiguous span of source video (seconds). */
+export type ClipSegment = { start_s: number; end_s: number };
+
 export type Clip = {
   start_s: number;
   end_s: number;
+  /**
+   * Optional jump-cut assembly: 1-3 sorted, non-overlapping spans stitched
+   * with fast transitions. Omitted = the single span start_s..end_s.
+   */
+  segments?: ClipSegment[];
   storyline: Storyline;
   hook_title: string;
   first_3s_hook: string;
@@ -99,28 +107,4 @@ export type Transcript = {
   words: Word[];
   segs: Seg[];
   duration: number;
-};
-
-export type PipelineStage =
-  | "loading-ffmpeg"
-  | "extracting-audio"
-  | "transcribing"
-  | "merging-transcript"
-  | "finding-moments"
-  | "snapping-clips"
-  | "done"
-  | "error";
-
-export type PipelineProgress = {
-  stage: PipelineStage;
-  detail?: string;
-  /** 0–1 overall progress when known */
-  progress?: number;
-};
-
-export type PipelineResult = {
-  clips: Clip[];
-  transcript: MergedTranscript;
-  videoName: string;
-  model?: string;
 };

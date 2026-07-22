@@ -42,3 +42,4 @@ next-env.d.ts
 
 # downloaded campaign source videos (never commit)
 campaign/
+.playwright-mcp/

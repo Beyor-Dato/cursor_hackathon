@@ -21,11 +21,30 @@ function toCompactSegs(segments: TranscriptSegment[]): Seg[] {
   return segments.map((s) => ({ s: s.start, e: s.end, text: s.text.trim() }));
 }
 
+/**
+ * Prefix-sum chunk offsets from Whisper-reported durations. Real ffmpeg
+ * segments run slightly longer than the nominal segment length (keyframe
+ * alignment), so `idx * segmentSeconds` drifts on long videos. Falls back
+ * to the caller's nominal offsets for any chunk whose duration is missing.
+ */
+function chunkOffsets(chunks: ChunkTranscript[], fallback: number[]): number[] {
+  const out = new Array<number>(chunks.length);
+  let acc = 0;
+  chunks.forEach((chunk, i) => {
+    out[i] = acc;
+    const d = chunk.duration ?? 0;
+    const nominal = Math.max((fallback[i + 1] ?? 0) - (fallback[i] ?? 0), 0);
+    acc += d > 0 ? d : nominal;
+  });
+  return out;
+}
+
 /** Merge chunk transcripts with per-chunk time offsets (deterministic). */
 export function mergeChunkTranscripts(
   chunks: ChunkTranscript[],
-  offsets: number[]
+  nominalOffsets: number[]
 ): MergedTranscript {
+  const offsets = chunkOffsets(chunks, nominalOffsets);
   const words: TranscriptWord[] = [];
   const segments: TranscriptSegment[] = [];
   let duration = 0;
@@ -138,10 +157,15 @@ export function snapToSentences(
     return { start_s: startS, end_s: Math.max(endS, startS + 3) };
   }
 
-  const start = findSentenceStart(words, startS);
+  let start = findSentenceStart(words, startS);
   let end = findSentenceEnd(words, endS);
-  if (duration != null) end = Math.min(end, duration);
-  end = Math.max(end, start + 3);
+  if (duration != null) {
+    // Clamp start first so the 3s minimum length can't push end past duration.
+    start = Math.min(start, Math.max(0, duration - 3));
+    end = Math.min(Math.max(end, start + 3), duration);
+  } else {
+    end = Math.max(end, start + 3);
+  }
 
   return { start_s: start, end_s: end };
 }
@@ -162,31 +186,6 @@ export function timelineText(segments: TranscriptSegment[] | Seg[]): string {
       return `[${fmtTime(start)}-${fmtTime(end)}] ${text}`;
     })
     .join("\n");
-}
-
-/** @deprecated Use snapToSentences */
-export function snapClip(
-  start: number,
-  end: number,
-  segs: Seg[],
-  duration: number
-): { start: number; end: number } {
-  const snapped = snapToSentences(
-    start,
-    end,
-    segs.flatMap((seg) => {
-      const parts = seg.text.split(/\s+/).filter(Boolean);
-      const span = Math.max(seg.e - seg.s, 0.1);
-      const step = span / Math.max(parts.length, 1);
-      return parts.map((word, i) => ({
-        word,
-        start: seg.s + i * step,
-        end: seg.s + (i + 1) * step,
-      }));
-    }),
-    duration
-  );
-  return { start: snapped.start_s, end: snapped.end_s };
 }
 
 export function wordsInRange(

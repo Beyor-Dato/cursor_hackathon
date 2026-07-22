@@ -10,6 +10,7 @@ const CAPTION_MAX_WIDTH = 940;
 const CAPTION_BASE_SIZE = 76;
 const CAPTION_MIN_SIZE = 48;
 const TITLE_BASE_SIZE = 64;
+const FLASH_FRAMES = 4; // white jump-cut flash decays over this many drawn frames
 const FONT_STACK =
   '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
 
@@ -34,8 +35,17 @@ function pickMimeType(): string | null {
   return null;
 }
 
-function once(video: HTMLVideoElement, event: string, errMsg: string): Promise<void> {
+function once(
+  video: HTMLVideoElement,
+  event: string,
+  errMsg: string,
+  timeoutMs = 15000
+): Promise<void> {
   return new Promise((resolve, reject) => {
+    const timer = window.setTimeout(() => {
+      cleanup();
+      reject(new Error(`${errMsg} (timed out after ${timeoutMs / 1000}s)`));
+    }, timeoutMs);
     const onEvent = () => {
       cleanup();
       resolve();
@@ -45,6 +55,7 @@ function once(video: HTMLVideoElement, event: string, errMsg: string): Promise<v
       reject(new Error(errMsg));
     };
     const cleanup = () => {
+      window.clearTimeout(timer);
       video.removeEventListener(event, onEvent);
       video.removeEventListener("error", onError);
     };
@@ -62,6 +73,23 @@ function coverRect(vw: number, vh: number): { x: number; y: number; w: number; h
   }
   const h = vw / target;
   return { x: 0, y: (vh - h) / 2, w: vw, h };
+}
+
+/**
+ * Destination rect that CONTAINS the full source frame — never crops.
+ * Landscape fits to width; portrait/square fits to height, capped at W.
+ * Vertically centered on 42% of canvas height so the caption zone stays clear.
+ */
+function containRect(vw: number, vh: number): { x: number; y: number; w: number; h: number } {
+  const scale = Math.min(W / vw, H / vh);
+  const w = vw * scale;
+  const h = vh * scale;
+  return {
+    x: (W - w) / 2,
+    y: Math.max(0, H * 0.42 - h / 2),
+    w,
+    h,
+  };
 }
 
 function buildGroups(words: Word[]): CaptionGroup[] {
@@ -226,18 +254,25 @@ function drawTitle(ctx: CanvasRenderingContext2D, tl: TitleLayout): void {
 
 /**
  * Renders a 1080×1920 vertical clip with burned-in karaoke captions, hook
- * title (first 3s), and progress bar. Records canvas frames plus the video's
- * audio (rerouted through WebAudio, never to speakers) via MediaRecorder and
- * resolves with the resulting WebM blob.
+ * title (first 3s of virtual time), and progress bar. Plays the given
+ * segments back-to-back as one continuous output with fast jump-cut flashes
+ * between them. Records canvas frames plus the video's audio (rerouted
+ * through WebAudio, never to speakers) via MediaRecorder and resolves with
+ * the resulting WebM blob.
  *
- * Word timestamps are in source-video seconds and compared against
- * video.currentTime directly. No logos or watermarks — campaign rule.
+ * Segments are sorted, non-overlapping source-video ranges. Word timestamps
+ * are in source-video seconds and compared against video.currentTime
+ * directly; title/progress use virtual (output) time. No logos or
+ * watermarks — campaign rule.
  */
 export async function exportVertical(
   videoUrl: string,
   clip: Clip,
   words: Word[],
-  opts: { start: number; end: number; onProgress?: (frac: number) => void }
+  opts: {
+    segments: { start: number; end: number }[];
+    onProgress?: (frac: number) => void;
+  }
 ): Promise<Blob> {
   if (typeof window === "undefined") {
     throw new Error("exportVertical must run in the browser");
@@ -247,8 +282,17 @@ export async function exportVertical(
     throw new Error("Use Chrome for captioned export — MP4 export works everywhere");
   }
 
-  const { start, end } = opts;
-  const duration = Math.max(end - start, 0.01);
+  const segments = opts.segments;
+  if (segments.length === 0) throw new Error("exportVertical needs at least one segment");
+  // Virtual time = output-timeline seconds: completed segment durations plus
+  // progress into the current one. Title and progress bar run on this clock.
+  const segStartVirtual: number[] = [];
+  let virtualAcc = 0;
+  for (const s of segments) {
+    segStartVirtual.push(virtualAcc);
+    virtualAcc += s.end - s.start;
+  }
+  const totalVirtual = Math.max(virtualAcc, 0.01);
 
   // Fresh element per call: createMediaElementSource can only ever attach once
   // to a given media element.
@@ -267,25 +311,33 @@ export async function exportVertical(
   let audioCtx: AudioContext | null = null;
   let recorder: MediaRecorder | null = null;
   let raf = 0;
+  let endGuard: (() => void) | null = null;
   const tracks: MediaStreamTrack[] = [];
 
   try {
+    // Create and resume the AudioContext first, while the user gesture is
+    // still fresh — awaiting metadata/seek can outlive Chrome's ~5s
+    // activation window and leave the context suspended (silent WebM).
+    const ac = new AudioContext();
+    audioCtx = ac;
+    await ac.resume();
+
     await once(video, "loadedmetadata", "Could not load video for export");
-    video.currentTime = start;
+    video.currentTime = segments[0].start;
     await once(video, "seeked", "Could not seek video for export");
 
-    const src = coverRect(video.videoWidth, video.videoHeight);
+    // Layout is fixed for the whole export: blurred cover-crop fills the
+    // canvas behind a contained (never cropped) foreground frame.
+    const bg = coverRect(video.videoWidth, video.videoHeight);
+    const fg = containRect(video.videoWidth, video.videoHeight);
     const groups = buildGroups(words);
     const layouts = new Map<number, CaptionLayout>();
     const title = layoutTitle(ctx, clip.hook_title);
 
     // Route element audio into the recording graph only — no speaker bleed.
-    const ac = new AudioContext();
-    audioCtx = ac;
     const sourceNode = ac.createMediaElementSource(video);
     const dest = ac.createMediaStreamDestination();
     sourceNode.connect(dest);
-    await ac.resume();
 
     const canvasStream = canvas.captureStream(FPS);
     const stream = new MediaStream([
@@ -305,9 +357,29 @@ export async function exportVertical(
     });
 
     let groupIdx = 0;
+    let segIdx = 0;
+    let flashFrames = 0; // counts down after each jump cut
+
+    const virtualNow = () => {
+      const seg = segments[segIdx];
+      const into = Math.min(Math.max(video.currentTime - seg.start, 0), seg.end - seg.start);
+      return segStartVirtual[segIdx] + into;
+    };
+
     const drawFrame = () => {
       const t = video.currentTime;
-      ctx.drawImage(video, src.x, src.y, src.w, src.h, 0, 0, W, H);
+      const virtual = virtualNow();
+
+      // Blurred cover-crop fills edge-to-edge (no black bars), darkened so
+      // the contained foreground frame reads on top.
+      ctx.filter = "blur(48px)";
+      ctx.drawImage(video, bg.x, bg.y, bg.w, bg.h, 0, 0, W, H);
+      ctx.filter = "none";
+      ctx.fillStyle = "rgba(0,0,0,0.38)";
+      ctx.fillRect(0, 0, W, H);
+
+      // Full frame, rescaled — never cropped.
+      ctx.drawImage(video, fg.x, fg.y, fg.w, fg.h);
 
       if (groups.length > 0) {
         while (groupIdx + 1 < groups.length && t >= groups[groupIdx + 1].start) groupIdx++;
@@ -322,26 +394,76 @@ export async function exportVertical(
         }
       }
 
-      if (title && t - start < 3) drawTitle(ctx, title);
+      if (title && virtual < 3) drawTitle(ctx, title);
 
-      const frac = Math.min(Math.max((t - start) / duration, 0), 1);
+      const frac = Math.min(Math.max(virtual / totalVirtual, 0), 1);
       ctx.fillStyle = ACCENT;
       ctx.fillRect(0, H - 8, Math.round(W * frac), 8);
+
+      if (flashFrames > 0) {
+        ctx.fillStyle = `rgba(255,255,255,${(0.85 * flashFrames) / FLASH_FRAMES})`;
+        ctx.fillRect(0, 0, W, H);
+        flashFrames--;
+      }
     };
 
     drawFrame(); // prime the canvas so the capture track has a first frame
     rec.start(250);
     await video.play();
 
+    let transitioning = false;
+
+    // Jump cut: hold recording and drawing, seek to the next segment, then
+    // resume both. The paused recorder drops the seek gap from the output.
+    const advance = async () => {
+      transitioning = true;
+      rec.pause();
+      video.pause();
+      segIdx++;
+      video.currentTime = segments[segIdx].start;
+      await once(video, "seeked", "Could not seek to next segment during export");
+      flashFrames = FLASH_FRAMES;
+      rec.resume();
+      await video.play();
+      transitioning = false;
+    };
+
     await new Promise<void>((resolve, reject) => {
       video.onerror = () => reject(new Error("Video playback failed during export"));
-      const tick = () => {
-        if (video.currentTime >= end || video.ended) {
+
+      const atSegmentEnd = () =>
+        !transitioning && (video.currentTime >= segments[segIdx].end || video.ended);
+      const lastSegment = () => segIdx === segments.length - 1;
+
+      // rAF stops in background tabs while the video and MediaRecorder keep
+      // running — timeupdate still fires there, so it owns segment cuts and
+      // the end-of-clip stop. Audio can never be recorded past the
+      // compliance-gated segment bounds.
+      endGuard = () => {
+        if (!atSegmentEnd()) return;
+        if (lastSegment()) {
+          video.pause();
           resolve();
-          return;
+        } else {
+          advance().catch(reject);
         }
-        drawFrame();
-        opts.onProgress?.(Math.min(Math.max((video.currentTime - start) / duration, 0), 1));
+      };
+      video.addEventListener("timeupdate", endGuard);
+
+      // rAF is for drawing; its end-check just cuts frame-accurately when
+      // the tab is visible instead of waiting for the next coarse timeupdate.
+      // No drawing mid-transition — avoids recording a stale seek flash.
+      const tick = () => {
+        if (atSegmentEnd()) {
+          if (lastSegment()) {
+            resolve();
+            return;
+          }
+          advance().catch(reject);
+        } else if (!transitioning) {
+          drawFrame();
+          opts.onProgress?.(Math.min(Math.max(virtualNow() / totalVirtual, 0), 1));
+        }
         raf = requestAnimationFrame(tick);
       };
       raf = requestAnimationFrame(tick);
@@ -356,9 +478,11 @@ export async function exportVertical(
     return new Blob(chunks, { type: rec.mimeType || mimeType });
   } finally {
     cancelAnimationFrame(raf);
+    if (endGuard) video.removeEventListener("timeupdate", endGuard);
     video.onerror = null;
     video.pause();
     video.removeAttribute("src");
+    video.load(); // actually release the decoder, not just the attribute
     if (recorder && recorder.state !== "inactive") {
       try {
         recorder.stop();

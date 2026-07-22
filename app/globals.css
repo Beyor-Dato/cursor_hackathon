@@ -9,7 +9,7 @@
   --color-blood-hot: #ff3347;
   --color-gold: #f5b52e;
   --color-bone: #f2f0ea;
-  --color-ash: #9a9aa5;
+  --color-ash: #a9a9b4;
 }
 
 @theme inline {
@@ -18,13 +18,23 @@
   --font-mono: var(--font-plex-mono);
 }
 
+/* Broadcast atmosphere: film grain, arena glow, gentle vignette.
+   No background-attachment: fixed — it bands on zoom and breaks on mobile. */
+html,
+body {
+  overflow-x: clip;
+}
+
 body {
   background-color: var(--color-ink);
   color: var(--color-bone);
   background-image:
-    radial-gradient(900px 420px at 50% -120px, rgb(224 27 44 / 0.16), transparent 70%),
-    radial-gradient(1200px 700px at 108% 112%, rgb(224 27 44 / 0.06), transparent 60%);
-  background-attachment: fixed;
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E"),
+    radial-gradient(140% 110% at 50% 8%, transparent 70%, rgb(0 0 0 / 0.25) 100%),
+    radial-gradient(1000px 480px at 50% -140px, rgb(224 27 44 / 0.2), transparent 70%),
+    radial-gradient(700px 420px at -8% 45%, rgb(245 181 46 / 0.04), transparent 60%),
+    radial-gradient(1200px 700px at 108% 112%, rgb(224 27 44 / 0.08), transparent 60%);
+  background-repeat: repeat, no-repeat, no-repeat, no-repeat, no-repeat;
 }
 
 ::selection {
@@ -40,6 +50,21 @@ body {
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--color-steel) transparent;
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-steel);
+  border: 2px solid var(--color-ink);
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-line);
 }
 
 /* Heavy shadow so burned-in-style captions read over any footage */
@@ -58,6 +83,35 @@ body {
     transparent 2px 16px
   );
 }
+
+/* Hazard texture runs hot while a file is being dragged over */
+.stripes-hot {
+  background-image: repeating-linear-gradient(
+    135deg,
+    rgb(224 27 44 / 0.12) 0 2px,
+    transparent 2px 16px
+  );
+}
+
+/* Oversized outline-only display type (fight-poster ghost numerals) */
+.ghost {
+  color: transparent;
+  -webkit-text-stroke: 1.5px rgb(242 240 234 / 0.1);
+  user-select: none;
+  overflow: clip;
+}
+
+/* Staggered hero load-in */
+.reveal {
+  opacity: 0;
+  animation: reveal-up 0.7s cubic-bezier(0.2, 0.7, 0.25, 1) both;
+}
+.reveal-1 { animation-delay: 0.05s; }
+.reveal-2 { animation-delay: 0.15s; }
+.reveal-3 { animation-delay: 0.25s; }
+.reveal-4 { animation-delay: 0.35s; }
+.reveal-5 { animation-delay: 0.45s; }
+.reveal-6 { animation-delay: 0.55s; }
 
 details.reasoning summary::-webkit-details-marker {
   display: none;
@@ -81,12 +135,51 @@ details.reasoning[open] summary::before {
   }
 }
 
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(26px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 @keyframes slide {
   from {
     transform: translateX(-110%);
   }
   to {
     transform: translateX(320%);
+  }
+}
+
+@keyframes sheen {
+  from {
+    transform: translateX(-260%) skewX(-18deg);
+  }
+  to {
+    transform: translateX(340%) skewX(-18deg);
+  }
+}
+
+@keyframes scan {
+  from {
+    transform: translateY(-140%);
+  }
+  to {
+    transform: translateY(560%);
+  }
+}
+
+@keyframes eq {
+  0%,
+  100% {
+    transform: scaleY(0.2);
+  }
+  50% {
+    transform: scaleY(1);
   }
 }
 
@@ -99,5 +192,14 @@ details.reasoning[open] summary::before {
   50% {
     opacity: 0.55;
     box-shadow: 0 0 0 6px rgb(255 51 71 / 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
   }
 }
