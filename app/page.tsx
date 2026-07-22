@@ -239,10 +239,20 @@ export default function Home() {
   }
 
   function acceptFile(f: File | null | undefined) {
-    if (!f || processing) return;
+    if (!f) return;
+    // Never swallow a drop silently — a stuck run used to make the dropzone
+    // look dead with no explanation.
+    if (processing) {
+      setStage({
+        k: "error",
+        message:
+          "A run is already going. Hit Cancel on the progress panel first, then drop your file.",
+      });
+      return;
+    }
     if (
       !f.type.startsWith("video/") &&
-      !/\.(mp4|mov|m4v|webm|mkv)$/i.test(f.name)
+      !/\.(mp4|mov|m4v|webm|mkv|avi|mpe?g|ts|m2ts|flv|wmv)$/i.test(f.name)
     ) {
       setStage({
         k: "error",
@@ -737,12 +747,20 @@ Any video · in your browser
                 </p>
               )}
 
-              {file && (
-                <p className="mt-6 truncate border-t border-line pt-4 font-mono text-xs text-ash">
-                  {file.name} · {fmtBytes(file.size)} — keep this tab open,
-                  everything runs locally
-                </p>
-              )}
+              <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
+                {file && (
+                  <p className="min-w-0 flex-1 truncate font-mono text-xs text-ash">
+                    {file.name} · {fmtBytes(file.size)} — keep this tab open,
+                    everything runs locally
+                  </p>
+                )}
+                <button
+                  onClick={reset}
+                  className="shrink-0 border border-line px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider text-ash transition-colors hover:border-blood hover:text-blood-hot"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </section>
         )}
@@ -870,7 +888,7 @@ Any video · in your browser
       <input
         ref={inputRef}
         type="file"
-        accept="video/*"
+        accept="video/*,.mp4,.mov,.m4v,.webm,.mkv,.avi,.mpeg,.mpg,.ts"
         className="hidden"
         onChange={(e) => {
           acceptFile(e.target.files?.[0]);
