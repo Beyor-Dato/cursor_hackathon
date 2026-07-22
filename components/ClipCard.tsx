@@ -147,6 +147,17 @@ export default function ClipCard({
   const [renderPct, setRenderPct] = useState(0);
   const [exportError, setExportError] = useState<string | null>(null);
   const [pendingSrt, setPendingSrt] = useState<string | null>(null);
+  const [saveLink, setSaveLink] = useState<{
+    url: string;
+    name: string;
+    mb: number;
+  } | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (saveLink) URL.revokeObjectURL(saveLink.url);
+    };
+  }, [saveLink]);
 
   const base = `hookshot-${clip.storyline}-${Math.round(bounds.start)}s`;
 
@@ -348,7 +359,14 @@ export default function ClipCard({
         onProgress: (frac) => setRenderPct(frac),
       });
       const ext = blob.type.includes("mp4") ? "mp4" : "webm";
-      downloadBlob(blob, `${base}-9x16.${ext}`);
+      const name = `${base}-9x16.${ext}`;
+      // Synthetic anchor clicks lose the filename in some browsers (the file
+      // lands as a bare blob UUID), so also expose a real link to click.
+      setSaveLink((prev) => {
+        if (prev) URL.revokeObjectURL(prev.url);
+        return { url: URL.createObjectURL(blob), name, mb: blob.size / 1e6 };
+      });
+      downloadBlob(blob, name);
     } catch (err) {
       setExportError(err instanceof Error ? err.message : "9:16 render failed");
     } finally {
@@ -728,6 +746,23 @@ export default function ClipCard({
           >
             {exportError}
           </p>
+        )}
+
+        {saveLink && (
+          <a
+            href={saveLink.url}
+            download={saveLink.name}
+            className="mt-2 flex items-center justify-between gap-3 rounded border border-gold bg-gold/10 px-3 py-2.5 transition-colors hover:bg-gold hover:text-ink"
+          >
+            <span className="min-w-0">
+              <span className="block text-xs font-bold uppercase tracking-wider text-gold">
+                ⬇ Save {saveLink.name.endsWith(".mp4") ? "MP4" : "WebM"}
+              </span>
+              <span className="mt-0.5 block truncate font-mono text-[10px] text-ash">
+                {saveLink.name} · {saveLink.mb.toFixed(1)} MB
+              </span>
+            </span>
+          </a>
         )}
 
         <div className="mt-2 flex flex-col gap-2">
