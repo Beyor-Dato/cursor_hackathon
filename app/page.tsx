@@ -341,6 +341,26 @@ export default function Home() {
     }
   }
 
+  /** Bundled public-domain clip so the hosted app demos end to end. */
+  async function runSample() {
+    if (processing) return;
+    try {
+      setStage({ k: "fetching", note: "Loading the sample clip…" });
+      const res = await fetch("/sample-nasa.mp4");
+      if (!res.ok) throw new Error(`Sample unavailable (${res.status})`);
+      const blob = await res.blob();
+      await run(
+        new File([blob], "NASA Artemis III briefing.mp4", { type: "video/mp4" })
+      );
+    } catch (err) {
+      setStage({
+        k: "error",
+        message:
+          err instanceof Error ? err.message : "Sample clip failed to load.",
+      });
+    }
+  }
+
   async function run(f: File): Promise<boolean> {
     setFile(f);
     if (urlRef.current) URL.revokeObjectURL(urlRef.current);
@@ -515,13 +535,20 @@ Any video · in your browser
               </button>
             </div>
 
-            {!ytAvailable && (
-              <p className="reveal reveal-4 mt-2 font-mono text-[11px] leading-relaxed text-gold/80">
-                Link pull needs yt-dlp on the server — YouTube blocks cloud IPs,
-                so it only runs locally. Drop a file to use the full pipeline
-                here.
-              </p>
-            )}
+            <div className="reveal reveal-4 mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+              <button
+                onClick={() => void runSample()}
+                disabled={processing}
+                className="border border-gold/60 bg-gold/10 px-3.5 py-2 font-mono text-[11px] font-bold uppercase tracking-wider text-gold transition-colors hover:bg-gold hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                ▶ Try a sample clip
+              </button>
+              <span className="font-mono text-[11px] text-ash">
+                {ytAvailable
+                  ? "NASA briefing · 2 min · runs the full pipeline"
+                  : "Link pull needs yt-dlp locally — YouTube blocks cloud IPs. The sample and file drop run the full pipeline right here."}
+              </span>
+            </div>
 
             <div className="reveal reveal-4 mt-3">
               <input
